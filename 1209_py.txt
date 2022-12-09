@@ -1,0 +1,48 @@
+from umqtt.robust import MQTTClient
+from machine import Pin,PWM
+import network
+import time
+
+
+sta=network.WLAN(network.STA_IF)
+sta.active(True)
+sta.connect('www','zzpg35390')
+while not sta.isconnected():
+    pass
+print('Wi-Fi連線成功')
+
+
+mqtt_client_id = 'age'
+AIO_URL = 'io.adafruit.com'
+AIO_USERNAME = ' '
+AIO_KEY=' '
+
+client=MQTTClient(client_id = mqtt_client_id,
+                  server = AIO_URL,
+                  user = AIO_USERNAME,
+                  password = AIO_KEY)
+
+client.connect()
+print('MQTT連線成功')
+
+age_limit = 10
+
+
+def get_cmd(topic,msg):
+    age= int(msg)
+    print(age)
+    if(age>=age_limit):
+        print("超過年齡限制")
+        
+        buzzer = PWM(Pin(23,Pin.OUT),freq=0, duty=512)
+        buzzer.freq(494)
+        time.sleep(1)
+        buzzer.deinit()
+        
+client.set_callback(get_cmd)
+
+client.subscribe(str.encode(AIO_USERNAME)+b"/feeds/age")
+
+while True:
+    
+    client.check_msg()
